@@ -1,3 +1,4 @@
+
 package com.Insumos.Evaluacion.Insumos_Evaluacion_Server.JPA;
 
 import jakarta.persistence.Column;
@@ -7,21 +8,19 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import java.util.List;
-
 @Entity
 public class Usuario {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID_USUARIO")
     private Long id;
-
+    
     @Column(name = "NOMBRE_USUARIO", nullable = false)
     private String nombre;
-
+    
     @OneToMany(mappedBy = "usuario")
     private List<Contrato> contratos;
-
+    
     @OneToMany(mappedBy = "usuario")
     private List<Transaccion> transacciones;
 

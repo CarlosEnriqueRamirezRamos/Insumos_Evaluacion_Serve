@@ -14,18 +14,18 @@ public class Cargo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID_CARGO")
     private Long id;
-
+    
     @OneToOne
-    @JoinColumn(name = "ID_TRANSACCION")
+    @JoinColumn(name = "ID_TRANSACCION", nullable = false, unique = true)
     private Transaccion transaccion;
-
+    
     @Column(name = "CARGO_USO")
     private Double cargoUso;
-
+    
     @Column(name = "CARGO_EXCESO")
     private Double cargoExceso;
-
-    @Column(name = "TOTAL")
+    
+    @Column(name = "TOTAL_FACTURAR")
     private Double totalFacturar;
 
     public Long getId() {

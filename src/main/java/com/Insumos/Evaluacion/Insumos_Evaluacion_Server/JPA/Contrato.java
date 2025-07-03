@@ -12,19 +12,18 @@ import java.util.List;
 
 @Entity
 public class Contrato {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID_CONTRATO")
     private Long id;
-
+    
     @Column(name = "NOMBRE_CONTRATO", nullable = false)
-    private String nombre;
-
+    private String nombreContrato;
+    
     @ManyToOne
-    @JoinColumn(name = "ID_USUARIO")
+    @JoinColumn(name = "ID_USUARIO", nullable = false)
     private Usuario usuario;
-
+    
     @OneToMany(mappedBy = "contrato")
     private List<Transaccion> transacciones;
 
@@ -36,12 +35,12 @@ public class Contrato {
         this.id = id;
     }
 
-    public String getNombre() {
-        return nombre;
+    public String getNombreContrato() {
+        return nombreContrato;
     }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
+    public void setNombreContrato(String nombreContrato) {
+        this.nombreContrato = nombreContrato;
     }
 
     public Usuario getUsuario() {

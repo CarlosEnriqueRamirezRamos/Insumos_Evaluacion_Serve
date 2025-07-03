@@ -6,24 +6,26 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 
 @Entity
-public class Tarifa {
+public class TransaccionZona {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID_TARIFA")
+    @Column(name = "ID_TRANSACCION_ZONA")
     private Long id;
     
-    @OneToOne
-    @JoinColumn(name = "ID_TRANSACCION", nullable = false, unique = true)
+    @ManyToOne
+    @JoinColumn(name = "ID_TRANSACCION", nullable = false)
     private Transaccion transaccion;
     
-    @Column(name = "TARIFA_EXCESO_FIRME")
-    private Double tarifaExcesoFirme;
+    @ManyToOne
+    @JoinColumn(name = "ID_ZONA", nullable = false)
+    private ZonaTarifa zona;
     
-    @Column(name = "TARIFA_USO_INTERRUP")
-    private Double tarifaUsoInterrup;
+    @ManyToOne
+    @JoinColumn(name = "ID_TIPO", nullable = false)
+    private ZonaTipo tipo;
 
     public Long getId() {
         return id;
@@ -41,20 +43,21 @@ public class Tarifa {
         this.transaccion = transaccion;
     }
 
-    public Double getTarifaExcesoFirme() {
-        return tarifaExcesoFirme;
+    public ZonaTarifa getZona() {
+        return zona;
     }
 
-    public void setTarifaExcesoFirme(Double tarifaExcesoFirme) {
-        this.tarifaExcesoFirme = tarifaExcesoFirme;
+    public void setZona(ZonaTarifa zona) {
+        this.zona = zona;
     }
 
-    public Double getTarifaUsoInterrup() {
-        return tarifaUsoInterrup;
+    public ZonaTipo getTipo() {
+        return tipo;
     }
 
-    public void setTarifaUsoInterrup(Double tarifaUsoInterrup) {
-        this.tarifaUsoInterrup = tarifaUsoInterrup;
+    public void setTipo(ZonaTipo tipo) {
+        this.tipo = tipo;
     }
+    
     
 }

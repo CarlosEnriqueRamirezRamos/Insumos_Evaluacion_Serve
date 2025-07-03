@@ -5,22 +5,16 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import java.util.List;
 
 @Entity
-public class ZonasTipo {
-
+public class ZonaTipo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID_TIPO")
     private Long id;
-
-    @Column(name = "TIPO", nullable = false)
-    private String tipo;
-
-    @OneToMany(mappedBy = "tipoZona")
-    private List<ZonasTarifa> zonas;
+    
+    @Column(name = "NOMBRE_TIPO", nullable = false)
+    private String nombreTipo;
 
     public Long getId() {
         return id;
@@ -30,20 +24,12 @@ public class ZonasTipo {
         this.id = id;
     }
 
-    public String getTipo() {
-        return tipo;
+    public String getNombreTipo() {
+        return nombreTipo;
     }
 
-    public void setTipo(String tipo) {
-        this.tipo = tipo;
-    }
-
-    public List<ZonasTarifa> getZonas() {
-        return zonas;
-    }
-
-    public void setZonas(List<ZonasTarifa> zonas) {
-        this.zonas = zonas;
+    public void setNombreTipo(String nombreTipo) {
+        this.nombreTipo = nombreTipo;
     }
     
 }

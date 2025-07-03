@@ -7,14 +7,14 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 @Entity
-public class TipoNodo {
+public class ZonaTarifa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ID_TIPO_NODO")
+    @Column(name = "ID_ZONA")
     private Long id;
     
-    @Column(name = "NOMBRE_NODO", nullable = false)
-    private String nombreNodo;
+    @Column(name = "NOMBRE")
+    private String nombre;
 
     public Long getId() {
         return id;
@@ -24,12 +24,13 @@ public class TipoNodo {
         this.id = id;
     }
 
-    public String getNombreNodo() {
-        return nombreNodo;
+    public String getNombre() {
+        return nombre;
     }
 
-    public void setNombreNodo(String nombreNodo) {
-        this.nombreNodo = nombreNodo;
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
     }
+    
     
 }
