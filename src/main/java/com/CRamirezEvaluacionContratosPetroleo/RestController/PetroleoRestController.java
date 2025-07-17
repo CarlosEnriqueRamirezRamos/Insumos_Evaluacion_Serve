@@ -354,5 +354,4 @@ public class PetroleoRestController {
             return ResponseEntity.internalServerError().body(result);
         }
     }
-
 }
