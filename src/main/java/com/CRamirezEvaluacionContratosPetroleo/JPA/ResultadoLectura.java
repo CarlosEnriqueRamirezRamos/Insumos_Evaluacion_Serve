@@ -1,4 +1,4 @@
-package com.JDomingoContratosPetroleo.DomingoContratosPetroleo.JPA;
+package com.CRamirezEvaluacionContratosPetroleo.JPA;
 
 import java.util.ArrayList;
 import java.util.List;

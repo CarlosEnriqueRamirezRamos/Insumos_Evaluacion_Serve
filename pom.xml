@@ -9,9 +9,9 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.JDomingoContratosPetroleo</groupId>
-    <artifactId>DomingoContratosPetroleoService</artifactId>
+    <artifactId>Insumos_Evaluacion_Server</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>DomingoContratosPetroleoService</name>
+    <name>Insumos_Evaluacion_Server</name>
     <description>Demo project for Spring Boot</description>
     <url/>
     <licenses>

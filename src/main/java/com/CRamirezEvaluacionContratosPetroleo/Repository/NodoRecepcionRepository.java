@@ -1,7 +1,7 @@
 
-package com.JDomingoContratosPetroleo.DomingoContratosPetroleo.Repository;
+package com.CRamirezEvaluacionContratosPetroleo.Repository;
 
-import com.JDomingoContratosPetroleo.DomingoContratosPetroleo.JPA.NodoRecepcion;
+import com.CRamirezEvaluacionContratosPetroleo.JPA.NodoRecepcion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

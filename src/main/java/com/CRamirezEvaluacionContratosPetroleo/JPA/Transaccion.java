@@ -1,5 +1,5 @@
 
-package com.JDomingoContratosPetroleo.DomingoContratosPetroleo.JPA;
+package com.CRamirezEvaluacionContratosPetroleo.JPA;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

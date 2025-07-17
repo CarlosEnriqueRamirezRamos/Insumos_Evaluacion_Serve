@@ -1,4 +1,4 @@
-package com.JDomingoContratosPetroleo.DomingoContratosPetroleo.JPA;
+package com.CRamirezEvaluacionContratosPetroleo.JPA;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

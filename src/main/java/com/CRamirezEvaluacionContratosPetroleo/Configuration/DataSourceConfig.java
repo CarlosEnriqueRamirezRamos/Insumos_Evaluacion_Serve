@@ -1,4 +1,4 @@
-package com.JDomingoContratosPetroleo.DomingoContratosPetroleo.Configuration;
+package com.CRamirezEvaluacionContratosPetroleo.Configuration;
 
 import javax.sql.DataSource;
 import org.springframework.context.annotation.Bean;
@@ -14,7 +14,7 @@ public class DataSourceConfig {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName("oracle.jdbc.OracleDriver");
         dataSource.setUrl("jdbc:oracle:thin:@localhost:1521:ORCL");
-        dataSource.setUsername("JDomingoContratosPetroleo");
+        dataSource.setUsername("CRAMIREZ");
         dataSource.setPassword("password1");
 
         return dataSource;

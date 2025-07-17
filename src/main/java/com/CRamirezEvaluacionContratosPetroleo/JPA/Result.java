@@ -1,5 +1,5 @@
 
-package com.JDomingoContratosPetroleo.DomingoContratosPetroleo.JPA;
+package com.CRamirezEvaluacionContratosPetroleo.JPA;
 
 import java.util.List;
 
