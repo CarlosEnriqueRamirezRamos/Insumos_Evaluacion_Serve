@@ -1,5 +1,6 @@
 package com.CRamirezEvaluacionContratosPetroleo.RestController;
 
+import com.CRamirezEvaluacionContratosPetroleo.DAO.TransaccionDAOImplemetation;
 import com.CRamirezEvaluacionContratosPetroleo.JPA.Cantidad;
 import com.CRamirezEvaluacionContratosPetroleo.JPA.Contrato;
 import com.CRamirezEvaluacionContratosPetroleo.JPA.NodoEntrega;
@@ -33,13 +34,14 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/CargaMasiva")
+@RequestMapping("/Api")
 public class PetroleoRestController {
 
     @Autowired
@@ -65,6 +67,9 @@ public class PetroleoRestController {
     
     @Autowired
     private TarifaRepository tarifaRepository;
+    
+    @Autowired
+    private TransaccionDAOImplemetation transaccionDAOImplemetation;
 
     public ResultadoLectura LecturaArchivo(File archivo) {
         ResultadoLectura resultado = new ResultadoLectura();
@@ -203,7 +208,13 @@ public class PetroleoRestController {
         return resultado;
     }
 
-    @PostMapping
+    @GetMapping
+    public ResponseEntity GetAll(){
+        Result result = new Result();
+        return ResponseEntity.ok(transaccionDAOImplemetation.GetAll());
+    }
+    
+    @PostMapping("/CargaMasiva")
     public ResponseEntity CargaMasiva(MultipartFile archivo) {
         Result result = new Result();
         try {
