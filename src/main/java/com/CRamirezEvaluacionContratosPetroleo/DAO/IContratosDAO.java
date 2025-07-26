@@ -2,7 +2,7 @@ package com.CRamirezEvaluacionContratosPetroleo.DAO;
 
 import com.CRamirezEvaluacionContratosPetroleo.JPA.Result;
 
-public interface ITransaccionDAO {
-    Result GetAll();
-    Result getByContratoId(int IdColonia);
+public interface IContratosDAO {
+    Result Getbyid(int IdUsuario);
+    
 }

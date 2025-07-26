@@ -1,6 +1,9 @@
 package com.CRamirezEvaluacionContratosPetroleo.RestController;
 
+import com.CRamirezEvaluacionContratosPetroleo.DAO.ContratosDAOImplemetation;
 import com.CRamirezEvaluacionContratosPetroleo.DAO.TransaccionDAOImplemetation;
+import com.CRamirezEvaluacionContratosPetroleo.DAO.TarifaDAOImplemetation;
+import com.CRamirezEvaluacionContratosPetroleo.DAO.UsuarioDAOImplemetation;
 import com.CRamirezEvaluacionContratosPetroleo.JPA.Cantidad;
 import com.CRamirezEvaluacionContratosPetroleo.JPA.Contrato;
 import com.CRamirezEvaluacionContratosPetroleo.JPA.NodoEntrega;
@@ -23,6 +26,7 @@ import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,10 +37,13 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -64,12 +71,21 @@ public class PetroleoRestController {
 
     @Autowired
     private TransaccionRepository transaccionRepository;
-    
+
     @Autowired
     private TarifaRepository tarifaRepository;
-    
+
     @Autowired
     private TransaccionDAOImplemetation transaccionDAOImplemetation;
+
+    @Autowired
+    private TarifaDAOImplemetation tarifaDAOImplemetation;
+
+    @Autowired
+    private ContratosDAOImplemetation contratosDAOImplemetation;
+
+    @Autowired
+    private UsuarioDAOImplemetation usuarioDAOImplemetation;
 
     public ResultadoLectura LecturaArchivo(File archivo) {
         ResultadoLectura resultado = new ResultadoLectura();
@@ -180,11 +196,11 @@ public class PetroleoRestController {
                     transaccion.setFacturaTotal(row.getCell(18).getNumericCellValue());
                     transaccion.setCantidad(cantidad);
                     listaTransacciones.add(transaccion);
-                    
+
                     //Tarifa
                     Tarifa tarifa = new Tarifa();
                     tarifa.transaccion = new Transaccion();
-                    
+
                     tarifa.setExcesoFirme(row.getCell(14).getNumericCellValue());
                     tarifa.setUsoInterrumpible(row.getCell(15).getNumericCellValue());
                     tarifa.setTransaccion(transaccion);
@@ -209,11 +225,22 @@ public class PetroleoRestController {
     }
 
     @GetMapping
-    public ResponseEntity GetAll(){
+    public ResponseEntity GetAll() {
         Result result = new Result();
         return ResponseEntity.ok(transaccionDAOImplemetation.GetAll());
     }
-    
+
+    @GetMapping("/Tarifa/{idTransaccion}")
+    public ResponseEntity GetTarifa(@PathVariable int idTransaccion) {
+        Result result = new Result();
+        return ResponseEntity.ok(tarifaDAOImplemetation.GetAll(idTransaccion));
+    }
+
+    @GetMapping("/Contratos/{idUsuario}")
+    public ResponseEntity GetContratos(@PathVariable int idUsuario) {
+        return ResponseEntity.ok(contratosDAOImplemetation.Getbyid(idUsuario));
+    }
+
     @PostMapping("/CargaMasiva")
     public ResponseEntity CargaMasiva(MultipartFile archivo) {
         Result result = new Result();
@@ -249,6 +276,11 @@ public class PetroleoRestController {
         }
 
         return ResponseEntity.ok().body(result);
+    }
+
+    @GetMapping("/Usuarios")
+    public ResponseEntity GetUsuarios() {
+        return ResponseEntity.ok(usuarioDAOImplemetation.GetAll());
     }
 
     public ResponseEntity procesar(ResultadoLectura resultadoLectura) {
@@ -351,9 +383,9 @@ public class PetroleoRestController {
             if (resultadoLectura.getTransacciones() != null) {
                 transaccionRepository.saveAll(resultadoLectura.getTransacciones());
             }
-            
+
             //Guardar Tarifas
-            if(resultadoLectura.getTarifas() != null){
+            if (resultadoLectura.getTarifas() != null) {
                 tarifaRepository.saveAll(resultadoLectura.getTarifas());
             }
 
@@ -364,5 +396,33 @@ public class PetroleoRestController {
             result.correct = false;
             return ResponseEntity.internalServerError().body(result);
         }
+    }
+
+    @GetMapping("/TrsaccionGetAll/{IdContrato}")
+    public Result transaccionGetnyId(@PathVariable int IdContrato) {
+        Result result = transaccionDAOImplemetation.getByContratoId(IdContrato);
+        return result;
+    }
+
+    // Agrega esto junto a tus otros @GetMapping
+    @GetMapping("/paginado")
+    public ResponseEntity<Map<String, Object>> getPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Result paginatedResult = transaccionDAOImplemetation.getPaginated(page, size);
+        long total = transaccionDAOImplemetation.getTotalCount();
+
+        if (!paginatedResult.correct) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", paginatedResult.object);
+        response.put("currentPage", page);
+        response.put("totalItems", total);
+        response.put("totalPages", (int) Math.ceil((double) total / size));
+
+        return ResponseEntity.ok(response);
     }
 }
