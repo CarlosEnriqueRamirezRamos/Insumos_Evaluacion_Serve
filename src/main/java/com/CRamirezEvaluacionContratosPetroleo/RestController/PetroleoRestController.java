@@ -234,69 +234,119 @@ public class PetroleoRestController {
         return ResponseEntity.ok("Usuario: " + username);
     }
 
-    @GetMapping("/index")
-    public ResponseEntity GetAll() {
-        Result result = new Result();
-        return ResponseEntity.ok(transaccionDAOImplemetation.GetAll());
+    // Este endpoint responderá a GET http://localhost:8081/Api
+    @GetMapping
+    public ResponseEntity<Result<List<Transaccion>>> getAllTransacciones() {
+        System.out.println("DEBUG (PetroleoRestController): Accediendo a GET /Api");
+        try {
+            Result<List<Transaccion>> result = transaccionDAOImplemetation.GetAll();
+            System.out.println("DEBUG (PetroleoRestController): transaccionDAOImplemetation.GetAll() - Correct: " + result.correct);
+            if (!result.correct) {
+                System.err.println("DEBUG (PetroleoRestController): Error en DAO: " + result.errorMessage);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
+            }
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            System.err.println("DEBUG (PetroleoRestController): Excepción al obtener transacciones: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error("Error interno del servidor al obtener transacciones."));
+        }
     }
 
     @GetMapping("/Tarifa/{idTransaccion}")
-    public ResponseEntity GetTarifa(@PathVariable int idTransaccion) {
-        Result result = new Result();
-        return ResponseEntity.ok(tarifaDAOImplemetation.GetAll(idTransaccion));
+    public ResponseEntity<Result<List<Tarifa>>> getTarifa(@PathVariable int idTransaccion) { // Tipo de retorno consistente
+        System.out.println("DEBUG (PetroleoRestController): Accediendo a GET /Api/Tarifa/" + idTransaccion);
+        try {
+            Result<List<Tarifa>> result = tarifaDAOImplemetation.GetAll(idTransaccion); // Asumo que devuelve Result<List<Tarifa>>
+            System.out.println("DEBUG (PetroleoRestController): tarifaDAOImplemetation.GetAll() - Correct: " + result.correct);
+            if (!result.correct) {
+                System.err.println("DEBUG (PetroleoRestController): Error en DAO: " + result.errorMessage);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
+            }
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            System.err.println("DEBUG (PetroleoRestController): Excepción al obtener tarifa: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error("Error interno del servidor al obtener tarifa."));
+        }
     }
 
     @GetMapping("/Contratos/{idUsuario}")
-    public ResponseEntity GetContratos(@PathVariable int idUsuario) {
-        return ResponseEntity.ok(contratosDAOImplemetation.Getbyid(idUsuario));
+    public ResponseEntity<Result<List<Contrato>>> getContratos(@PathVariable int idUsuario) { // Tipo de retorno consistente
+        System.out.println("DEBUG (PetroleoRestController): Accediendo a GET /Api/Contratos/" + idUsuario);
+        try {
+            Result<List<Contrato>> result = contratosDAOImplemetation.Getbyid(idUsuario); // Asumo que devuelve Result<List<Contrato>>
+            System.out.println("DEBUG (PetroleoRestController): contratosDAOImplemetation.Getbyid() - Correct: " + result.correct);
+            if (!result.correct) {
+                System.err.println("DEBUG (PetroleoRestController): Error en DAO: " + result.errorMessage);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
+            }
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            System.err.println("DEBUG (PetroleoRestController): Excepción al obtener contratos: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error("Error interno del servidor al obtener contratos."));
+        }
     }
 
     @PostMapping("/CargaMasiva")
-    public ResponseEntity CargaMasiva(MultipartFile archivo) {
-        Result result = new Result();
+    public ResponseEntity<Result<Void>> CargaMasiva(MultipartFile archivo) { // Tipo de retorno consistente
+        System.out.println("DEBUG (PetroleoRestController): Accediendo a POST /Api/CargaMasiva");
+        Result<Void> result = new Result<>(); // Usar Result<Void> si no devuelve un objeto específico
         try {
             if (archivo != null && !archivo.isEmpty()) {
                 String tipoArchivo = archivo.getOriginalFilename().split("\\.")[1];
 
                 String root = System.getProperty("user.dir");
                 String path = "src/main/resources/static/Archivos";
-                String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yy-MM-dd   HH-mm-SS"));
+                String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yy-MM-dd HH-mm-SS"));
                 String absolutePath = root + "/" + path + "/" + fecha + archivo.getOriginalFilename();
                 archivo.transferTo(new File(absolutePath));
 
                 //Leer archivo
                 ResultadoLectura resultadoLectura = LecturaArchivo(new File(absolutePath));
-                List<Zona> listaZonas = resultadoLectura.getZonas();
-                List<Usuario> listaUsuarios = resultadoLectura.getUsuarios();
-                List<NodoRecepcion> listaNodoRecepcions = resultadoLectura.getNrecepciones();
-                List<NodoEntrega> listaNodoEntregas = resultadoLectura.getNentregas();
-                List<Cantidad> listaCantidades = resultadoLectura.getcantidades();
-                List<Contrato> listaContratos = resultadoLectura.getcontratos();
-                List<Transaccion> listaTransacciones = resultadoLectura.getTransacciones();
-                List<Tarifa> listaTarifas = resultadoLectura.getTarifas();
 
-                procesar(resultadoLectura);
-                System.out.println("");
-
+                // Procesar y guardar los datos
+                ResponseEntity<Result<Void>> procesarResponse = procesar(resultadoLectura);
+                if (!procesarResponse.getStatusCode().is2xxSuccessful()) {
+                    return procesarResponse; // Si procesar falla, devuelve su error
+                }
             }
             result.correct = true;
+            return ResponseEntity.ok().body(result);
         } catch (Exception ex) {
-            ex.getLocalizedMessage();
+            System.err.println("DEBUG (PetroleoRestController): Excepción en CargaMasiva: " + ex.getMessage());
+            ex.printStackTrace();
             result.correct = false;
+            result.errorMessage = "Error al realizar la carga masiva: " + ex.getLocalizedMessage();
+            result.ex = ex;
+            return ResponseEntity.internalServerError().body(result);
         }
-
-        return ResponseEntity.ok().body(result);
     }
 
     @GetMapping("/Usuarios")
-    public ResponseEntity GetUsuarios() {
-        return ResponseEntity.ok(usuarioDAOImplemetation.GetAll());
+    public ResponseEntity<Result<List<Usuario>>> getUsuarios() { // Tipo de retorno consistente
+        System.out.println("DEBUG (PetroleoRestController): Accediendo a GET /Api/Usuarios");
+        try {
+            Result<List<Usuario>> result = usuarioDAOImplemetation.GetAll(); // Asumo que devuelve Result<List<Usuario>>
+            System.out.println("DEBUG (PetroleoRestController): usuarioDAOImplemetation.GetAll() - Correct: " + result.correct);
+            if (!result.correct) {
+                System.err.println("DEBUG (PetroleoRestController): Error en DAO: " + result.errorMessage);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
+            }
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            System.err.println("DEBUG (PetroleoRestController): Excepción al obtener usuarios: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error("Error interno del servidor al obtener usuarios."));
+        }
     }
 
-    public ResponseEntity procesar(ResultadoLectura resultadoLectura) {
-        Result result = new Result();
+    // Cambiado el tipo de retorno a ResponseEntity<Result<Void>> para consistencia
+    public ResponseEntity<Result<Void>> procesar(ResultadoLectura resultadoLectura) {
+        Result<Void> result = new Result<>(); // Usar Result<Void>
         try {
-
+            // ... (tu lógica existente de guardado) ...
             // Guardar zonas
             if (resultadoLectura.getZonas() != null) {
                 zonaRepository.saveAll(resultadoLectura.getZonas());
@@ -404,6 +454,8 @@ public class PetroleoRestController {
         } catch (Exception ex) {
             ex.printStackTrace();
             result.correct = false;
+            result.errorMessage = "Error al procesar el archivo: " + ex.getLocalizedMessage();
+            result.ex = ex;
             return ResponseEntity.internalServerError().body(result);
         }
     }

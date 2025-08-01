@@ -1,64 +1,84 @@
 package com.CRamirezEvaluacionContratosPetroleo.Configuration;
 
-import com.CRamirezEvaluacionContratosPetroleo.Service.JwtService;
-import io.micrometer.common.lang.NonNull;
+import com.CRamirezEvaluacionContratosPetroleo.Service.JwtService; // Asegúrate de que esta importación sea correcta
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.NonNull; // Importar NonNull
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UserDetailsService; // Asegúrate de que esta importación sea correcta
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService; // Lo usaremos para cargar el usuario desde la DB
+    private final UserDetailsService userDetailsService; // Inyecta tu UserDetailsService
 
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain // Cadena de filtros de Spring
+            @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-        final String authHeader = request.getHeader("Authorization"); // Busca el header Authorization
+        final String authHeader = request.getHeader("Authorization");
         final String jwt;
-        final String userEmail;
+        final String userName; // Cambiado de userEmail a userName para consistencia con tu modelo
 
-        // Si no hay header o no empieza con "Bearer ", pasamos al siguiente filtro
+        System.out.println("DEBUG (JwtFilter): Solicitud entrante para URL: " + request.getRequestURI());
+        System.out.println("DEBUG (JwtFilter): Header Authorization: " + authHeader);
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println("DEBUG (JwtFilter): No se encontró token JWT o formato incorrecto. Continuando la cadena de filtros.");
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7); // Extrae el token (quita "Bearer ")
-        userEmail = jwtService.extractUsername(jwt); // Obtiene el username del token
+        jwt = authHeader.substring(7); // Extrae el token JWT (después de "Bearer ")
+        System.out.println("DEBUG (JwtFilter): Token JWT extraído: " + jwt);
 
-        // Si hay un username y no hay una autenticación ya en el contexto de seguridad
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail); // Carga los detalles del usuario de la DB
-            if (jwtService.isTokenValid(jwt, userDetails)) { // Valida el token
-                // Si es válido, creamos un objeto de autenticación
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null, // La contraseña ya no es necesaria, ya fue verificada
-                        userDetails.getAuthorities() // Los roles/permisos del usuario
-                );
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
-                // Establece la autenticación en el SecurityContext, para que Spring Security sepa quién es el usuario
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+        try {
+            userName = jwtService.extractUsername(jwt); // Extrae el nombre de usuario del token
+            System.out.println("DEBUG (JwtFilter): Username extraído del token: " + userName);
+
+            // Si el nombre de usuario se extrajo y no hay autenticación actual en el contexto
+            if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userName);
+                System.out.println("DEBUG (JwtFilter): UserDetails cargado para: " + userName + ", Roles: " + userDetails.getAuthorities());
+
+                // Valida el token
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    System.out.println("DEBUG (JwtFilter): Token JWT es VÁLIDO.");
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null, // No necesitamos las credenciales aquí, ya están autenticadas
+                            userDetails.getAuthorities()
+                    );
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+                    // Establece el objeto de autenticación en el SecurityContextHolder
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    System.out.println("DEBUG (JwtFilter): Autenticación establecida en SecurityContextHolder.");
+                } else {
+                    System.out.println("DEBUG (JwtFilter): Token JWT es INVÁLIDO.");
+                }
+            } else {
+                System.out.println("DEBUG (JwtFilter): Username es nulo o ya hay autenticación en el contexto.");
             }
+        } catch (Exception e) {
+            System.err.println("ERROR (JwtFilter): Error al procesar el token JWT: " + e.getMessage());
         }
+
         filterChain.doFilter(request, response); // Continúa la cadena de filtros
     }
 }

@@ -1,25 +1,32 @@
-package com.CRamirezEvaluacionContratosPetroleo.Service; // O en un subpaquete de servicio para seguridad
+package com.CRamirezEvaluacionContratosPetroleo.Service;
 
-import com.CRamirezEvaluacionContratosPetroleo.Repository.UsuarioRepository; // Importa tu repositorio de Usuario
+import com.CRamirezEvaluacionContratosPetroleo.Repository.UsuarioRepository;
+import com.CRamirezEvaluacionContratosPetroleo.JPA.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-@Service // Marca esta clase como un componente de servicio de Spring
+@Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private final UsuarioRepository usuarioRepository; // Inyectamos tu repositorio de Usuario
+    private final UsuarioRepository usuarioRepository;
 
-    @Autowired // Inyección de dependencias a través del constructor
+    @Autowired
     public UserDetailsServiceImpl(UsuarioRepository usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
     }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return usuarioRepository.findByUserName(username)
+        // Obtenemos la entidad Usuario del servidor
+        Usuario usuario = usuarioRepository.findByUserName(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con username: " + username));
+
+        // ¡SIMPLIFICACIÓN CLAVE!
+        // Devuelve directamente tu entidad Usuario, ya que implementa UserDetails.
+        // Spring Security llamará a getUsername(), getPassword(), getAuthorities(), etc., de esta instancia.
+        return usuario; // Ahora es explícito que devolvemos la instancia de Usuario
     }
 }

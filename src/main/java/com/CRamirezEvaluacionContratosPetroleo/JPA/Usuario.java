@@ -33,17 +33,16 @@ public class Usuario implements UserDetails {
     @Column(name = "status")
     private int Status;
 
-    @Column(name = "password") // Esta es la propiedad de la clase
+    @Column(name = "password")
     private String Password;
 
-    @Column(name = "username", unique = true) // Esta es la propiedad de la clase
+    // ¡CAMBIO CLAVE AQUÍ! Usamos "USERNAME" (todo mayúsculas) para coincidir con el comportamiento por defecto de Oracle
+    @Column(name = "USERNAME", unique = true) 
     private String userName;
 
-    // Constructor vacío (necesario para JPA)
     public Usuario() {
     }
 
-    // --- Getters y Setters existentes ---
     public int getIdUsuario() {
         return IdUsuario;
     }
@@ -78,7 +77,7 @@ public class Usuario implements UserDetails {
 
     @Override
     public String getPassword() {
-        return Password; // Retorna el valor de tu campo 'Password'
+        return Password;
     }
 
     public void setPassword(String Password) {
@@ -87,7 +86,7 @@ public class Usuario implements UserDetails {
 
     @Override
     public String getUsername() {
-        return userName; // Retorna el valor de tu campo 'UserName'
+        return userName;
     }
 
     public void setUserName(String UserName) {
@@ -98,7 +97,12 @@ public class Usuario implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<GrantedAuthority> authorities = new ArrayList<>();
         if (this.Rol != null && this.Rol.getRol() != null) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_" + this.Rol.getRol().toUpperCase()));
+            String roleFromDb = this.Rol.getRol();
+            String processedRole = "ROLE_" + roleFromDb.toUpperCase();
+            System.out.println("DEBUG (Usuario.getAuthorities): Rol de la BD: '" + roleFromDb + "', Rol procesado para Spring Security: '" + processedRole + "'");
+            authorities.add(new SimpleGrantedAuthority(processedRole));
+        } else {
+            System.out.println("DEBUG (Usuario.getAuthorities): El usuario no tiene rol asignado o el nombre del rol es nulo.");
         }
         return authorities;
     }
