@@ -57,16 +57,18 @@ public class TransaccionDAOImplemetation implements ITransaccionDAO {
                 dto.setZonaInyeccion((String) row[8]);
                 dto.setZonaExtraccion((String) row[9]);
 
-                dto.setGasExceso(row[10] != null ? ((BigDecimal) row[10]).doubleValue() : null);
-                dto.setCargoUso(row[11] != null ? ((BigDecimal) row[11]).doubleValue() : null);
-                dto.setCargoGasExceso(row[12] != null ? ((BigDecimal) row[12]).doubleValue() : null);
-                dto.setFacturaTotal(row[13] != null ? ((BigDecimal) row[13]).doubleValue() : null);
-                dto.setNominadaRecepcion(row[14] != null ? ((BigDecimal) row[14]).doubleValue() : null);
-                dto.setAsignadaRecepcion(row[15] != null ? ((BigDecimal) row[15]).doubleValue() : null);
-                dto.setNominadaEntrega(row[16] != null ? ((BigDecimal) row[16]).doubleValue() : null);
-                dto.setAsignadaEntrega(row[17] != null ? ((BigDecimal) row[17]).doubleValue() : null);
-                dto.setExcesoFirme(row[18] != null ? ((BigDecimal) row[18]).doubleValue() : null);
-                dto.setUsoInterrumpible(row[19] != null ? ((BigDecimal) row[19]).doubleValue() : null);
+                // --- ¡CORRECCIÓN AQUÍ! Asignar 0.0 si el valor es null en la base de datos ---
+                dto.setGasExceso(row[10] != null ? ((BigDecimal) row[10]).doubleValue() : 0.0);
+                dto.setCargoUso(row[11] != null ? ((BigDecimal) row[11]).doubleValue() : 0.0);
+                dto.setCargoGasExceso(row[12] != null ? ((BigDecimal) row[12]).doubleValue() : 0.0);
+                dto.setFacturaTotal(row[13] != null ? ((BigDecimal) row[13]).doubleValue() : 0.0);
+                dto.setNominadaRecepcion(row[14] != null ? ((BigDecimal) row[14]).doubleValue() : 0.0);
+                dto.setAsignadaRecepcion(row[15] != null ? ((BigDecimal) row[15]).doubleValue() : 0.0);
+                dto.setNominadaEntrega(row[16] != null ? ((BigDecimal) row[16]).doubleValue() : 0.0);
+                dto.setAsignadaEntrega(row[17] != null ? ((BigDecimal) row[17]).doubleValue() : 0.0);
+                dto.setExcesoFirme(row[18] != null ? ((BigDecimal) row[18]).doubleValue() : 0.0);
+                dto.setUsoInterrumpible(row[19] != null ? ((BigDecimal) row[19]).doubleValue() : 0.0);
+                // --- FIN DE CORRECCIÓN ---
 
                 transacciones.add(dto);
             }

@@ -1,129 +1,83 @@
 package com.CRamirezEvaluacionContratosPetroleo.JPA;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.FetchType;
-import org.springframework.security.core.userdetails.UserDetails;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.util.Collection;
 import java.util.List;
-import java.util.ArrayList;
 
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
+@Table(name = "Usuario") // Asegúrate de que el nombre de la tabla sea correcto en tu DB
 public class Usuario implements UserDetails {
 
     @Id
-    @Column(name = "idusuario")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int IdUsuario;
+    @Column(name = "IdUsuario")
+    private Integer idUsuario;
 
-    @Column(name = "nombre")
-    private String Nombre;
+    @Column(name = "Nombre", nullable = false, length = 100)
+    private String nombre;
 
-    @JoinColumn(name = "idrol")
-    @OneToOne(fetch = FetchType.EAGER)
-    public Rol Rol;
-
-    @Column(name = "status")
-    private int Status;
-
-    @Column(name = "password")
-    private String Password;
-
-    // ¡CAMBIO CLAVE AQUÍ! Usamos "USERNAME" (todo mayúsculas) para coincidir con el comportamiento por defecto de Oracle
-    @Column(name = "USERNAME", unique = true) 
+    @Column(name = "UserName", nullable = false, unique = true, length = 50)
     private String userName;
 
-    public Usuario() {
-    }
+    @Column(name = "Password", nullable = false, length = 255)
+    private String password;
 
-    public int getIdUsuario() {
-        return IdUsuario;
-    }
+    @ManyToOne(fetch = FetchType.EAGER) // Carga el rol inmediatamente con el usuario
+    @JoinColumn(name = "IdRol", nullable = false) // Columna en la tabla Usuarios que es FK a Rol
+    private Rol rol; // Asumiendo que esta es tu entidad Rol
 
-    public void setIdUsuario(int IdUsuario) {
-        this.IdUsuario = IdUsuario;
-    }
+    @Column(name = "Status", nullable = false)
+    private Integer status; // 1 para activo, 0 para inactivo
 
-    public String getNombre() {
-        return Nombre;
-    }
-
-    public void setNombre(String Nombre) {
-        this.Nombre = Nombre;
-    }
-
-    public Rol getRol() {
-        return Rol;
-    }
-
-    public void setRol(Rol Rol) {
-        this.Rol = Rol;
-    }
-
-    public int getStatus() {
-        return Status;
-    }
-
-    public void setStatus(int Status) {
-        this.Status = Status;
-    }
+    // --- Métodos de la interfaz UserDetails ---
 
     @Override
-    public String getPassword() {
-        return Password;
-    }
-
-    public void setPassword(String Password) {
-        this.Password = Password;
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // ¡CORRECCIÓN AQUÍ! Se cambió 'getNombre()' a 'getRol()'
+        // Asumiendo que tu entidad Rol tiene un campo 'Rol' y su getter 'getRol()'.
+        return List.of(new SimpleGrantedAuthority("ROLE_" + rol.getRol().toUpperCase()));
     }
 
     @Override
     public String getUsername() {
-        return userName;
-    }
-
-    public void setUserName(String UserName) {
-        this.userName = UserName;
+        return userName; // Retorna el nombre de usuario para Spring Security
     }
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        if (this.Rol != null && this.Rol.getRol() != null) {
-            String roleFromDb = this.Rol.getRol();
-            String processedRole = "ROLE_" + roleFromDb.toUpperCase();
-            System.out.println("DEBUG (Usuario.getAuthorities): Rol de la BD: '" + roleFromDb + "', Rol procesado para Spring Security: '" + processedRole + "'");
-            authorities.add(new SimpleGrantedAuthority(processedRole));
-        } else {
-            System.out.println("DEBUG (Usuario.getAuthorities): El usuario no tiene rol asignado o el nombre del rol es nulo.");
-        }
-        return authorities;
+    public String getPassword() {
+        return password; // Retorna la contraseña (ya encriptada)
     }
 
     @Override
     public boolean isAccountNonExpired() {
-        return true;
+        return true; // Implementa tu lógica de expiración de cuenta si es necesario
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return true; // Implementa tu lógica de bloqueo de cuenta si es necesario
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return true;
+        return true; // Implementa tu lógica de expiración de credenciales si es necesario
     }
 
     @Override
     public boolean isEnabled() {
-        return this.Status == 1;
+        // La cuenta está habilitada si el status es 1
+        return this.status == 1;
     }
 }

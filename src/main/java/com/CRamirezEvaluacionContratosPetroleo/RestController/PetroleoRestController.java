@@ -16,13 +16,14 @@ import com.CRamirezEvaluacionContratosPetroleo.JPA.Usuario;
 import com.CRamirezEvaluacionContratosPetroleo.JPA.Zona;
 import com.CRamirezEvaluacionContratosPetroleo.Repository.CantidadRepository;
 import com.CRamirezEvaluacionContratosPetroleo.Repository.ContratoRepository;
-import com.CRamirezEvaluacionContratosPetroleo.Repository.NodoRecepcionRepository;
 import com.CRamirezEvaluacionContratosPetroleo.Repository.NodoEntregaRepository;
+import com.CRamirezEvaluacionContratosPetroleo.Repository.NodoRecepcionRepository;
 import com.CRamirezEvaluacionContratosPetroleo.Repository.TarifaRepository;
 import com.CRamirezEvaluacionContratosPetroleo.Repository.TransaccionRepository;
 import com.CRamirezEvaluacionContratosPetroleo.Repository.UsuarioRepository;
 import com.CRamirezEvaluacionContratosPetroleo.Repository.ZonaRepository;
 import java.io.File;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -39,7 +40,11 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,49 +52,38 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.security.core.Authentication;
+import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/Api")
+@RequestMapping("/Api") // Mapeo base para todos los endpoints de este controlador
+@RequiredArgsConstructor
 public class PetroleoRestController {
 
+    // Se mantiene @Autowired para los repositorios y DAOs que no son 'final'
     @Autowired
     private ZonaRepository zonaRepository;
-
     @Autowired
     private UsuarioRepository usuarioRepository;
-
     @Autowired
     private NodoRecepcionRepository nodoRecepcionRepository;
-
     @Autowired
     private NodoEntregaRepository nodoEntregaRepository;
-
     @Autowired
     private CantidadRepository cantidadRepository;
-
     @Autowired
     private ContratoRepository contratoRepository;
-
     @Autowired
     private TransaccionRepository transaccionRepository;
-
     @Autowired
     private TarifaRepository tarifaRepository;
 
-    @Autowired
-    private TransaccionDAOImplemetation transaccionDAOImplemetation;
+    private final TransaccionDAOImplemetation transaccionDAOImplemetation;
+    private final TarifaDAOImplemetation tarifaDAOImplemetation;
+    private final ContratosDAOImplemetation contratosDAOImplemetation;
+    private final UsuarioDAOImplemetation usuarioDAOImplemetation;
 
-    @Autowired
-    private TarifaDAOImplemetation tarifaDAOImplemetation;
-
-    @Autowired
-    private ContratosDAOImplemetation contratosDAOImplemetation;
-
-    @Autowired
-    private UsuarioDAOImplemetation usuarioDAOImplemetation;
-
-    public ResultadoLectura LecturaArchivo(File archivo) {
+    // Método LecturaArchivo integrado de nuevo en esta clase
+    private ResultadoLectura LecturaArchivo(File archivo) throws IOException {
         ResultadoLectura resultado = new ResultadoLectura();
 
         Set<String> ZonaUnica = new HashSet<>();
@@ -106,7 +100,7 @@ public class PetroleoRestController {
         List<Transaccion> listaTransacciones = new ArrayList<>();
         List<Tarifa> listaTarifas = new ArrayList<>();
 
-        try (XSSFWorkbook workbook = new XSSFWorkbook(archivo);) {
+        try (XSSFWorkbook workbook = new XSSFWorkbook(archivo)) {
             for (Sheet listaZona : workbook) {
                 for (Row row : listaZona) {
                     if (row.getRowNum() == 0) {
@@ -170,28 +164,28 @@ public class PetroleoRestController {
 
                     //Contrato
                     Contrato contrato = new Contrato();
-                    contrato.usuario = new Usuario();
+                    contrato.setUsuario(new Usuario()); // Usar setter
                     String ClaveContrato = row.getCell(1).getStringCellValue();
                     if (!ContratoUnico.contains(ClaveContrato)) {
                         ContratoUnico.add(ClaveContrato);
                         contrato.setClaveContrato(ClaveContrato);
-                        contrato.usuario.setNombre(row.getCell(2).getStringCellValue());
+                        contrato.getUsuario().setNombre(row.getCell(2).getStringCellValue()); // Usar getter y setter
                         listaContratos.add(contrato);
                     }
 
                     //Transaccion
                     Transaccion transaccion = new Transaccion();
-                    transaccion.contrato = new Contrato();
-                    transaccion.nodoRecepcion = new NodoRecepcion();
-                    transaccion.nodoEntrega = new NodoEntrega();
-                    transaccion.zonaInyeccion = new Zona();
-                    transaccion.zonaExtraccion = new Zona();
+                    transaccion.setContrato(new Contrato()); // Usar setter
+                    transaccion.setNodoRecepcion(new NodoRecepcion()); // Usar setter
+                    transaccion.setNodoEntrega(new NodoEntrega()); // Usar setter
+                    transaccion.setZonaInyeccion(new Zona()); // Usar setter
+                    transaccion.setZonaExtraccion(new Zona()); // Usar setter
                     transaccion.setFechaRegistro(row.getCell(0).getDateCellValue());
-                    transaccion.contrato.setClaveContrato(ClaveContrato);
-                    transaccion.nodoRecepcion.setClave(ClaveRecepcion);
-                    transaccion.nodoEntrega.setClave(ClaveEntrega);
-                    transaccion.zonaInyeccion.setDescripcion(ZonaInyeccion);
-                    transaccion.zonaExtraccion.setDescripcion(ZonaExtraccion);
+                    transaccion.getContrato().setClaveContrato(ClaveContrato); // Usar getter y setter
+                    transaccion.getNodoRecepcion().setClave(ClaveRecepcion); // Usar getter y setter
+                    transaccion.getNodoEntrega().setClave(ClaveEntrega); // Usar getter y setter
+                    transaccion.getZonaInyeccion().setDescripcion(ZonaInyeccion); // Usar getter y setter
+                    transaccion.getZonaExtraccion().setDescripcion(ZonaExtraccion); // Usar getter y setter
                     transaccion.setGasExceso(row.getCell(13).getNumericCellValue());
                     transaccion.setCargoUso(row.getCell(16).getNumericCellValue());
                     transaccion.setCargoGasExceso(row.getCell(17).getNumericCellValue());
@@ -201,7 +195,7 @@ public class PetroleoRestController {
 
                     //Tarifa
                     Tarifa tarifa = new Tarifa();
-                    tarifa.transaccion = new Transaccion();
+                    tarifa.setTransaccion(new Transaccion()); // Usar setter
 
                     tarifa.setExcesoFirme(row.getCell(14).getNumericCellValue());
                     tarifa.setUsoInterrumpible(row.getCell(15).getNumericCellValue());
@@ -211,9 +205,9 @@ public class PetroleoRestController {
             }
 
         } catch (Exception ex) {
-            System.out.println("Hubo un error quien sabe donde");
-
-            listaZonas = null;
+            System.err.println("ERROR (LecturaArchivo): Hubo un error al leer el archivo Excel:");
+            ex.printStackTrace();
+            throw new IOException("Error al procesar el archivo Excel: " + ex.getMessage(), ex);
         }
         resultado.setZonas(listaZonas);
         resultado.setUsuarios(listaUsuarios);
@@ -226,18 +220,47 @@ public class PetroleoRestController {
         return resultado;
     }
 
-    @GetMapping("User-info")
-    public ResponseEntity<?> getUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName(); // Obtiene el username
-        Object principal = authentication.getPrincipal();
-        return ResponseEntity.ok("Usuario: " + username);
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    @GetMapping("/User-info")
+    public ResponseEntity<?> getUserInfo() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+                UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+                
+                Map<String, Object> userInfo = new HashMap<>();
+                userInfo.put("username", userDetails.getUsername());
+                userInfo.put("roles", userDetails.getAuthorities().stream()
+                                                .map(GrantedAuthority::getAuthority)
+                                                .collect(Collectors.toList()));
+                
+                if (userDetails instanceof com.CRamirezEvaluacionContratosPetroleo.JPA.Usuario) {
+                    com.CRamirezEvaluacionContratosPetroleo.JPA.Usuario usuarioEntity = 
+                        (com.CRamirezEvaluacionContratosPetroleo.JPA.Usuario) userDetails;
+                    userInfo.put("nombre", usuarioEntity.getNombre());
+                    userInfo.put("idUsuario", usuarioEntity.getIdUsuario());
+                    userInfo.put("status", usuarioEntity.getStatus());
+                }
+
+                System.out.println("DEBUG (UserInfo): Acceso exitoso a /User-info para: " + userDetails.getUsername());
+                return ResponseEntity.ok(userInfo);
+            } else {
+                System.err.println("ERROR (UserInfo): Usuario no autenticado o principal no es UserDetails.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no autenticado.");
+            }
+        } catch (Exception e) {
+            System.err.println("ERROR (UserInfo): Excepción al procesar /api/User-info:");
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor al obtener información del usuario.");
+        }
     }
 
-    // Este endpoint responderá a GET http://localhost:8081/Api
-    @GetMapping
+    // Este endpoint es para obtener TODAS las transacciones
+    @GetMapping("/Transacciones") // Endpoint para obtener todas las transacciones
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_USUARIO')")
     public ResponseEntity<Result<List<Transaccion>>> getAllTransacciones() {
-        System.out.println("DEBUG (PetroleoRestController): Accediendo a GET /Api");
+        System.out.println("DEBUG (PetroleoRestController): Accediendo a GET /Api/Transacciones");
         try {
             Result<List<Transaccion>> result = transaccionDAOImplemetation.GetAll();
             System.out.println("DEBUG (PetroleoRestController): transaccionDAOImplemetation.GetAll() - Correct: " + result.correct);
@@ -247,17 +270,17 @@ public class PetroleoRestController {
             }
             return ResponseEntity.ok(result);
         } catch (Exception e) {
-            System.err.println("DEBUG (PetroleoRestController): Excepción al obtener transacciones: " + e.getMessage());
+            System.err.println("DEBUG (PetroleoRestController): Excepción al obtener todas las transacciones: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error("Error interno del servidor al obtener transacciones."));
         }
     }
 
     @GetMapping("/Tarifa/{idTransaccion}")
-    public ResponseEntity<Result<List<Tarifa>>> getTarifa(@PathVariable int idTransaccion) { // Tipo de retorno consistente
+    public ResponseEntity<Result<List<Tarifa>>> getTarifa(@PathVariable int idTransaccion) {
         System.out.println("DEBUG (PetroleoRestController): Accediendo a GET /Api/Tarifa/" + idTransaccion);
         try {
-            Result<List<Tarifa>> result = tarifaDAOImplemetation.GetAll(idTransaccion); // Asumo que devuelve Result<List<Tarifa>>
+            Result<List<Tarifa>> result = tarifaDAOImplemetation.GetAll(idTransaccion);
             System.out.println("DEBUG (PetroleoRestController): tarifaDAOImplemetation.GetAll() - Correct: " + result.correct);
             if (!result.correct) {
                 System.err.println("DEBUG (PetroleoRestController): Error en DAO: " + result.errorMessage);
@@ -272,10 +295,10 @@ public class PetroleoRestController {
     }
 
     @GetMapping("/Contratos/{idUsuario}")
-    public ResponseEntity<Result<List<Contrato>>> getContratos(@PathVariable int idUsuario) { // Tipo de retorno consistente
+    public ResponseEntity<Result<List<Contrato>>> getContratos(@PathVariable int idUsuario) {
         System.out.println("DEBUG (PetroleoRestController): Accediendo a GET /Api/Contratos/" + idUsuario);
         try {
-            Result<List<Contrato>> result = contratosDAOImplemetation.Getbyid(idUsuario); // Asumo que devuelve Result<List<Contrato>>
+            Result<List<Contrato>> result = contratosDAOImplemetation.Getbyid(idUsuario);
             System.out.println("DEBUG (PetroleoRestController): contratosDAOImplemetation.Getbyid() - Correct: " + result.correct);
             if (!result.correct) {
                 System.err.println("DEBUG (PetroleoRestController): Error en DAO: " + result.errorMessage);
@@ -290,27 +313,37 @@ public class PetroleoRestController {
     }
 
     @PostMapping("/CargaMasiva")
-    public ResponseEntity<Result<Void>> CargaMasiva(MultipartFile archivo) { // Tipo de retorno consistente
+    public ResponseEntity<Result<Void>> CargaMasiva(@RequestParam("archivo") MultipartFile archivo) {
         System.out.println("DEBUG (PetroleoRestController): Accediendo a POST /Api/CargaMasiva");
-        Result<Void> result = new Result<>(); // Usar Result<Void> si no devuelve un objeto específico
+        Result<Void> result = new Result<>();
         try {
             if (archivo != null && !archivo.isEmpty()) {
-                String tipoArchivo = archivo.getOriginalFilename().split("\\.")[1];
-
                 String root = System.getProperty("user.dir");
                 String path = "src/main/resources/static/Archivos";
+                File uploadDir = new File(root + "/" + path);
+                if (!uploadDir.exists()) {
+                    uploadDir.mkdirs();
+                }
+
                 String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yy-MM-dd HH-mm-SS"));
-                String absolutePath = root + "/" + path + "/" + fecha + archivo.getOriginalFilename();
-                archivo.transferTo(new File(absolutePath));
+                String originalFilename = archivo.getOriginalFilename();
+                String safeFilename = originalFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
+                String absolutePath = root + "/" + path + "/" + fecha + "_" + safeFilename;
+                
+                File destFile = new File(absolutePath);
+                archivo.transferTo(destFile);
 
-                //Leer archivo
-                ResultadoLectura resultadoLectura = LecturaArchivo(new File(absolutePath));
+                // Llamada directa al método LecturaArchivo dentro de esta clase
+                ResultadoLectura resultadoLectura = this.LecturaArchivo(destFile);
 
-                // Procesar y guardar los datos
                 ResponseEntity<Result<Void>> procesarResponse = procesar(resultadoLectura);
                 if (!procesarResponse.getStatusCode().is2xxSuccessful()) {
-                    return procesarResponse; // Si procesar falla, devuelve su error
+                    return procesarResponse;
                 }
+            } else {
+                result.correct = false;
+                result.errorMessage = "El archivo no fue proporcionado o está vacío.";
+                return ResponseEntity.badRequest().body(result);
             }
             result.correct = true;
             return ResponseEntity.ok().body(result);
@@ -324,11 +357,12 @@ public class PetroleoRestController {
         }
     }
 
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
     @GetMapping("/Usuarios")
-    public ResponseEntity<Result<List<Usuario>>> getUsuarios() { // Tipo de retorno consistente
+    public ResponseEntity<Result<List<Usuario>>> getUsuarios() {
         System.out.println("DEBUG (PetroleoRestController): Accediendo a GET /Api/Usuarios");
         try {
-            Result<List<Usuario>> result = usuarioDAOImplemetation.GetAll(); // Asumo que devuelve Result<List<Usuario>>
+            Result<List<Usuario>> result = usuarioDAOImplemetation.GetAll();
             System.out.println("DEBUG (PetroleoRestController): usuarioDAOImplemetation.GetAll() - Correct: " + result.correct);
             if (!result.correct) {
                 System.err.println("DEBUG (PetroleoRestController): Error en DAO: " + result.errorMessage);
@@ -342,11 +376,10 @@ public class PetroleoRestController {
         }
     }
 
-    // Cambiado el tipo de retorno a ResponseEntity<Result<Void>> para consistencia
-    public ResponseEntity<Result<Void>> procesar(ResultadoLectura resultadoLectura) {
-        Result<Void> result = new Result<>(); // Usar Result<Void>
+    // Este método 'procesar' se mantiene aquí porque interactúa directamente con los repositorios del controlador.
+    private ResponseEntity<Result<Void>> procesar(ResultadoLectura resultadoLectura) {
+        Result<Void> result = new Result<>();
         try {
-            // ... (tu lógica existente de guardado) ...
             // Guardar zonas
             if (resultadoLectura.getZonas() != null) {
                 zonaRepository.saveAll(resultadoLectura.getZonas());
@@ -364,14 +397,14 @@ public class PetroleoRestController {
                     .collect(Collectors.toMap(Usuario::getNombre, Function.identity(), (u1, u2) -> u1));
 
             //Asociar los a usuarios por nombre
-            for (Contrato contrato : resultadoLectura.getcontratos()) {
-                String nombreUsuario = contrato.getUsuario().getNombre(); //Se saca el nombre de excel
+            for (Contrato contrato : resultadoLectura.getContratos()) {
+                String nombreUsuario = contrato.getUsuario().getNombre();
                 Usuario usuarioConId = mapaUsuarios.get(nombreUsuario);
                 contrato.setUsuario(usuarioConId);
             }
             //Guardar contratos
-            if (resultadoLectura.getcontratos() != null) {
-                contratoRepository.saveAll(resultadoLectura.getcontratos());
+            if (resultadoLectura.getContratos() != null) {
+                contratoRepository.saveAll(resultadoLectura.getContratos());
             }
 
             // Guardar nodos de recepción
@@ -385,8 +418,8 @@ public class PetroleoRestController {
             }
 
             // Guardar cantidades
-            if (resultadoLectura.getcantidades() != null) {
-                cantidadRepository.saveAll(resultadoLectura.getcantidades());
+            if (resultadoLectura.getCantidades() != null) {
+                cantidadRepository.saveAll(resultadoLectura.getCantidades());
             }
 
             //Obtener los nodos de entrega guardados desde la bd
@@ -466,7 +499,7 @@ public class PetroleoRestController {
         return result;
     }
 
-    // Agrega esto junto a tus otros @GetMapping
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
     @GetMapping("/paginado")
     public ResponseEntity<Map<String, Object>> getPaginated(
             @RequestParam(defaultValue = "0") int page,
@@ -484,7 +517,7 @@ public class PetroleoRestController {
         response.put("currentPage", page);
         response.put("totalItems", total);
         response.put("totalPages", (int) Math.ceil((double) total / size));
-
         return ResponseEntity.ok(response);
     }
+
 }
